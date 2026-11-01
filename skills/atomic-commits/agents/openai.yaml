@@ -1,0 +1,4 @@
+interface:
+  display_name: "Atomic Commits"
+  short_description: "Split changes into focused, traceable Git commits"
+  default_prompt: "Use $atomic-commits to implement these changes in separate commits by purpose, verify each step, and report the commit hashes."

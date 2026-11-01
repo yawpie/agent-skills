@@ -1,40 +1,53 @@
 ---
 name: atomic-commits
-description: Organize working-tree changes into small, logical, independently reviewable Git commits. Use when implementing multiple changes, splitting an existing diff into separate commits, or preparing clean Conventional Commits. Do not trigger for tasks that do not modify or organize Git history.
+description: Implement code changes in separate, purpose-focused Git commits so they are easy to trace, review, and revert. Use when the user requests incremental implementation, separate commits, atomic commits, commit terpisah, or splitting existing changes into multiple commits.
 ---
 
 # Atomic Commits
 
-Create a series of focused Git commits so changes are easy to review, revert, and trace. Prefer one logical purpose per commit instead of one commit per file.
+Complete the requested work with one logical purpose per commit. When this skill is requested for implementation, create local commits as work progresses unless the user requests planning only or prohibits commits. Automatic invocation does not expand task authorization. Follow the user's instructions and repository rules.
 
-## Non-negotiable safeguards
+The [Indonesian version](references/indonesian.md) provides the same instructions. Read it only when Indonesian instructions are needed. Use one language version at a time. When maintaining this skill, keep both versions equivalent.
 
-- Inspect `git status --short`, current branch, and relevant diffs before modifying the index or committing.
-- Never stage or commit secrets, credentials, environment files, generated artifacts, or unrelated user changes.
-- Do not overwrite, discard, reset, amend, rebase, cherry-pick, force-push, or otherwise rewrite existing history without explicit authorization.
-- Never assume all uncommitted changes belong to the current task. Ask for ownership clarification if a change cannot be safely attributed; otherwise leave it untouched.
-- Do not create commits unless the user has requested committing changes or explicitly authorized this workflow. When the user requested only a plan or review, propose the commit boundaries without committing.
-- Preserve functional behavior and avoid mixing refactoring with feature work unless intrinsically required.
+## Inspect the initial state
 
-## Workflow
+- Read repository instructions, Git status, staged and unstaged diffs, and a few recent commit messages. Record the branch, initial HEAD if one exists, and changes present before starting.
+- Distinguish this task's changes from the user's existing work. Include pre-existing changes only when the user asks for them to be committed.
+- If the directory is not a Git repository, continue safe work and explain that commits cannot yet be created. Do not initialize Git or change identity configuration without authorization.
+- If merge conflicts or an unfinished Git operation exist, do not resolve or abort them without clear relevance and authorization.
 
-1. **Inspect:** Read `git status --short`, `git diff`, `git diff --cached`, and recent `git log --oneline -5`. Identify existing staged changes and untracked files. Avoid leaking secret values into reports.
-2. **Classify:** Group only task-related hunks by intent: feature, fix, refactor, test, docs, build, or chore. Each group must be understandable, independently testable when feasible, and reversible.
-3. **Plan:** Present commit order with a brief purpose, relevant files/hunks, and a proposed Conventional Commit subject. Put foundational changes ahead of dependents. Keep user-owned staged changes separate.
-4. **Implement:** Make changes in logical increments. If files contain mixed changes, stage selected hunks with `git add -p` or a precise patch. Do not use blanket `git add .` in a dirty working tree.
-5. **Verify:** For each planned commit, inspect `git diff --cached --check`, `git diff --cached --stat`, and `git diff --cached`. Run the most relevant available tests, linting, or build checks. Record skipped checks and reasons.
-6. **Commit:** Commit only the verified staged group using a Conventional Commit subject such as `feat(auth): add token refresh`, `fix(api): handle duplicate requests`, or `test(orders): cover retries`. Keep the subject concise and in imperative form.
-7. **Repeat:** Check working tree and staging area after every commit. Never absorb unrelated changes into a later commit.
-8. **Report:** List commits in order with abbreviated SHA, subject, tests run, and any remaining uncommitted changes or risks.
+## Define commit boundaries
 
-## Choosing commit boundaries
+Briefly describe the purpose of each planned commit and its dependency order. One simple change needs only one commit. Do not request approval for routine grouping already within the task's scope.
 
-- Combine tightly coupled changes required for one coherent behavior.
-- Split independent capabilities and documentation updates when each stands alone.
-- Include tests with the feature or fix they validate, rather than deferring all tests to a separate commit.
-- Avoid artificial splits that leave the codebase broken between commits, when feasible.
-- If a single file contains unrelated modifications, stage individual hunks only after confirming each belongs to the task.
+- Separate purposes that can be reviewed independently, such as validation fixes, feature additions, and independent refactoring.
+- Include the tests, configuration, migrations, documentation, or lockfiles required by an implementation in the same commit. Do not intentionally create intermediate commits that break the build or contracts.
+- Do not split commits solely by file, directory, architecture layer, line count, or a target number of commits. One feature may require several files in one commit.
+- Separate refactoring from behavior changes when both steps remain valid. Combine them if splitting creates a broken intermediate step.
+- For changes across repositories, create commits in each repository and explain their dependencies.
 
-## Language
+Example: changes to settings persistence, gesture action mapping, and an independent navigation bug fix can form three commits. If the settings screen cannot build without its persistence model, include both in one commit or introduce a compatible model first.
 
-Follow the user's preferred language for explanations. Use English Conventional Commit types (`feat`, `fix`, `docs`, `refactor`, `test`, `build`, `chore`) in Git subjects. Indonesian explanations are welcome; keep subjects short and explicit.
+## Complete and commit one purpose at a time
+
+1. Implement one group of changes, including the adjustments needed for that step to work.
+2. Run checks relevant to that group, following the project's commands and practices. For behavior changes, include meaningful tests when needed. Do not add tests that merely mirror the implementation or force tests for trivial changes.
+3. Inspect the diff, then stage only the paths or hunks belonging to that purpose. Use explicit paths. Avoid blanket staging that can absorb unrelated work.
+4. Inspect the entire index with `git diff --cached`, its summary, and `git diff --cached --check`. Ensure it contains no unrelated user changes, secrets, or generated files.
+5. Create a local commit after required checks pass. Follow the repository's commit message style; if none exists, use `type(scope): concrete purpose`, such as `feat(settings): add gesture action mapping` or `fix(auth): reject inactive accounts`. Add the reason or limitations in the body when useful. Do not invent issue numbers or test results.
+6. Verify that the commit succeeded, record its hash and contents, and check status before moving to the next purpose.
+
+If changes are already mixed together, use hunk staging or a reviewed index patch. Do not discard or rewrite the working tree to separate them.
+
+## Preserve the index and report verification accurately
+
+- Preserve the user's initial changes and staging state. Do not include them through a plain `git commit`, unstage everything, or use stash as an automatic step.
+- If the initial index contains work outside the scope, use an isolated temporary index or an authorized worktree only when the original changes and staging can be preserved correctly after committing. If that cannot be guaranteed, continue safe work and report the commit blocker.
+- For commits assembled through partial staging, working tree tests may include code absent from the commit. Verify the commit snapshot in isolation when needed to establish that test results apply to that commit. State when the snapshot has not been tested.
+- Fix failures caused by the task before committing. If required checks are blocked by the environment or pre-existing failures, report the cause and continue independent work; do not bypass required checks or claim they passed.
+- Do not run destructive resets, discard changes, amend, rebase, squash, push, or modify Git hooks and configuration unless requested or already authorized. If a commit is incorrect, prefer a focused corrective commit.
+- If a hook changes files, review those changes and rerun affected checks. If a hook rejects the commit, fix the cause without disabling the hook.
+
+## Finish with traceable results
+
+Complete all authorized purposes. Report each commit hash with a short description of its purpose, check results, and remaining changes. Explicitly state when a commit failed or testing covered only the working tree. Do not claim the working tree is clean while the user's work remains.
